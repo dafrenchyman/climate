@@ -1,0 +1,292 @@
+body {
+    font: 62.5% "Trebuchet MS", sans-serif;
+    margin: 0px;
+}
+
+.demoHeaders {
+    margin-top: 2em;
+}
+
+#dialog-link {
+    padding: .4em 1em .4em 20px;
+    text-decoration: none;
+    position: relative;
+}
+
+#dialog-link span.ui-icon {
+    margin: 0 5px 0 0;
+    position: absolute;
+    left: .2em;
+    top: 50%;
+    margin-top: -8px;
+}
+
+#icons {
+    margin: 0;
+    padding: 0;
+}
+
+#icons li {
+    margin: 2px;
+    position: relative;
+    padding: 4px 0;
+    cursor: pointer;
+    float: left;
+    list-style: none;
+}
+
+#icons span.ui-icon {
+    float: left;
+    margin: 0 4px;
+}
+
+.fakewindowcontain .ui-widget-overlay {
+    position: absolute;
+}
+
+select {
+    width: 200px;
+}
+
+#TimeSeriesChart {
+    display: block;
+    position: center;
+    height: 80%;
+    /*width: 1200px;
+    height: 500px;*/
+}
+
+/*c3.js custom settings (to handle the dark background)*/
+path.domain {
+    stroke: black;
+}
+
+.tick text {
+    fill: black;
+}
+
+.c3-legend-item text {
+    fill: black;
+}
+
+.tick line {
+    stroke: black;
+}
+
+.c3-axis-x-label {
+    fill: black;
+}
+
+.c3-axis-y-label {
+    fill: black;
+}
+
+#timeSeriesButton1 {
+    position: absolute;
+    display: block;
+    bottom: 10px;
+    left: 10px;
+    z-index: 3;
+}
+
+#timeSeriesButton2 {
+    position: absolute;
+    display: block;
+    bottom: 10px;
+    left: 10px;
+    z-index: 3;
+}
+
+#timeSeriesBox {
+    height: 100%;
+}
+
+#timeSeriesBox h3 {
+    margin: 0;
+    padding: 0.4em;
+    text-align: center;
+}
+
+#timeSeries {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    top: 30px;
+    right: 30px;
+    opacity: 0.9;
+    z-index: 10;
+    filter: alpha(opacity=90); /* For IE8 and earlier */
+}
+
+/*#effect {
+    background-color: #777777;
+}*/
+
+#accordionSize {
+    position: absolute;
+    font: 100% "Trebuchet MS", sans-serif;
+    font-size: 13px;
+    display: block;
+    top: 60px;
+    left: 10px;
+    border: none;
+    width: 800px;
+    z-index: 5;
+    opacity: 0.9;
+    filter: alpha(opacity=90); /* For IE8 and earlier */
+}
+
+.ui-menu {
+    width: 325px;
+    z-index: 200;
+}
+
+#colormapDynamicMenu {
+    width: 150px;
+    z-index: 999;
+    position: absolute
+}
+
+#colormapDynamicMenu.ui-menu {
+    width: 150px;
+    z-index: 200;
+}
+
+#canvas-align {
+    position: relative;
+    /*width: 100vw;
+    height: 100vh;*/
+}
+
+#webgl-canvas {
+    display: block;
+    position: relative;
+    /*width: 100vw;
+    height: 100vh;*/
+    z-index: 1;
+}
+
+#hud {
+    display: block;
+    position: absolute;
+    top: 0;
+    /*width: 1200px;
+    height: 800px;*/
+}
+
+#legend {
+    position: absolute;
+    display: block;
+    top: 50px;
+    right: 20px;
+    border: none;
+    font-size: 20pt;
+    z-index: 3;
+}
+
+#legend text {
+    fill: white;
+    text-shadow: -1px -1px 0 #000000,
+    1px -1px 0 #000000,
+    -1px 1px 0 #000000,
+    1px 1px 0 #000000,
+    -2px 0 0 #000000,
+    2px 0 0 #000000,
+    0 2px 0 #000000,
+    0 -2px 0 #000000;
+}
+
+#divDate {
+    position: absolute;
+    display: block;
+    bottom: 10px;
+    right: 20px;
+    border: none;
+    font-size: 20pt;
+    color: white;
+    text-shadow: /* Outline */ -1px -1px 0 #000000,
+    1px -1px 0 #000000,
+    -1px 1px 0 #000000,
+    1px 1px 0 #000000,
+    -2px 0 0 #000000,
+    2px 0 0 #000000,
+    0 2px 0 #000000,
+    0 -2px 0 #000000;
+    z-index: 3;
+}
+
+#divTitle {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    /*left: 50%;*/
+    border: none;
+    text-align: center;
+    font-size: 30px;
+    z-index: 3;
+    color: white;
+    text-shadow: /* Outline */ -1px -1px 0 #000000,
+    1px -1px 0 #000000,
+    -1px 1px 0 #000000,
+    1px 1px 0 #000000,
+    -2px 0 0 #000000,
+    2px 0 0 #000000,
+    0 2px 0 #000000,
+    0 -2px 0 #000000;
+}
+
+.axis text {
+    font: 20px sans-serif;
+    fill: black;
+}
+
+.axis line, .axis path {
+    fill: none;
+    stroke: black;
+    shape-rendering: crispEdges;
+}
+
+/*svg{ padding-left: 50px;  }*/
+
+/*.toggler { width: 800px;}*/
+#button {
+    padding: .5em 1em;
+    text-decoration: none;
+}
+
+#effect {
+    width: 800px;
+    padding: 0.4em;
+    position: relative;
+}
+
+#effect h3 {
+    margin: 0;
+    padding: 0.4em;
+    text-align: center;
+}
+
+#gridBoxSize {
+    position: absolute;
+    font: 100% "Trebuchet MS", sans-serif;
+    font-size: 13px;
+    display: block;
+    bottom: 10px;
+    left: 10px;
+    width: 200px;
+    z-index: 3;
+    opacity: 0.9;
+    filter: alpha(opacity=90); /* For IE8 and earlier */
+}
+
+#gridBox {
+    width: 200px;
+    padding: 0.4em;
+    position: relative;
+}
+
+#gridBox h3 {
+    margin: 0;
+    padding: 0.4em;
+    text-align: center;
+}

@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="us">
+<head>
+    <meta charset="utf-8">
+    <title>SDSU Climate Visualization Tool</title>
+    <link href="theme/original/jquery-ui.css" rel="stylesheet">
+    <!--link href="theme/jquery-ui.min.css" rel="stylesheet"-->
+    <!-- Load c3.css -->
+    <!--link href="c3-0.4.10/c3.css" rel="stylesheet" type="text/css"-->
+    <link href="node_modules/c3/c3.min.css" rel="stylesheet" type="text/css">
+
+    <script src="Coastlines/ne_110m_coastline.js"></script>
+    <script src="Coastlines/ne_110m_lakes.js"></script>
+    <script src="Coastlines/ne_110m_rivers_lake_centerlines.js"></script>
+
+    <!-- Load d3.js and c3.js -->
+    <!--script src="js/d3/d3.v3.min.js" charset="utf-8"></script-->
+    <!--script src="c3-0.4.10/c3.js"></script-->
+    <!-- Min Scripts -->
+    <!--script src="node_modules/c3/c3.min.js"></script>
+    <script src="node_modules/d3/d3.min.js"></script>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/jquery-migrate/dist/jquery-migrate.min.js"></script>
+    <script src="node_modules/jqueryui/external/jquery/jquery.min.js"></script>
+    <script src="node_modules/jqueryui/jquery-ui.min.js"></script>
+    <script src="node_modules/moment/min/moment.min.js"></script>
+    <script src="node_modules/gl-matrix/dist/gl-matrix-min.js"></script>
+    <script src="node_modules/urijs/src/URI.min.js"></script>
+    <script src="uiSetup.min.js"></script>
+    <script src="controls.min.js"></script>
+    <script src="webgl-utils.min.js"></script>
+    <script src="helper.min.js"></script>
+    <script src="colormaps.min.js"></script>
+    <script src="loaders.min.js"></script>
+    <script src="textHelper.min.js"></script>
+    <script src="Timeseries.min.js"></script>
+    <script src="glHelpers.min.js"></script>
+    <script src="glModeling.min.js"></script>
+    <script src="legend.min.js"></script-->
+
+    <!-- Regular Scripts -->
+    <script src="node_modules/c3/c3.min.js"></script>
+    <script src="node_modules/d3/d3.min.js"></script>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/jquery-migrate/dist/jquery-migrate.min.js"></script>
+    <script src="node_modules/jqueryui/external/jquery/jquery.min.js"></script>
+    <script src="node_modules/jqueryui/jquery-ui.min.js"></script>
+    <script src="node_modules/moment/min/moment.min.js"></script>
+    <script src="node_modules/gl-matrix/dist/gl-matrix-min.js"></script>
+    <script src="node_modules/urijs/src/URI.min.js"></script>
+    <script src="uiSetup.js"></script>
+    <script src="controls.js"></script>
+    <script src="webgl-utils.js"></script>
+    <script src="helper.js"></script>
+    <script src="colormaps.js"></script>
+    <script src="loaders.js"></script>
+    <script src="textHelper.js"></script>
+    <script src="Timeseries.js"></script>
+    <script src="glHelpers.js"></script>
+    <script src="glModeling.js"></script>
+    <script src="legend.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="styleSheet.css" media="screen" />
+</head>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-88180611-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+<script id="shader-fs" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform bool uUseLighting;
+    uniform sampler2D uSampler;
+
+    varying vec3 vAmbientColor;
+    varying vec3 vDirectionalColor;
+    varying vec3 vLightingDirection;
+
+    varying mat3 vNMatrix;
+    varying vec3 vLightWeighting;
+    varying vec4 vColor;
+    varying vec2 vTextureCoord;
+    varying vec3 vTransformedNormal;
+
+    varying vec3 vLightVector;
+    varying mat3 vTbn;
+    varying vec4 vPosition;
+
+    void main(void) {
+
+    	//gl_FragColor = vColor;
+		//gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+
+    	if (!uUseLighting)
+    	{
+    		gl_FragColor = vColor;
+    	} else {
+    		vec3 lightDirection = vLightVector; //normalize(uPointLightingLocation - vPosition.xyz);
+    		vec3 lightDirection_tangentSpace = vTbn * lightDirection;
+
+    		vec3 normalCoordinate = normalize(texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)).rgb *2.0 - 1.0);
+
+    		vec3 normal = normalize(vTbn * normalCoordinate);
+
+    		float intensity = max(0.0, dot(normal, lightDirection));
+
+    		vec3 lighting = vAmbientColor + vDirectionalColor * intensity;
+
+    		gl_FragColor = vec4(vColor.rgb * lighting, vColor.a);
+
+
+			//vec3 i = vTbn[0];
+
+    		//gl_FragColor = vec4(lightDirection_tangentSpace.xyz, vColor.a);
+
+			//float directionalLightWeighting = max(dot(normalize(vTransformedNormal), lightDirection), 0.0);
+			//vec3 lightWeighting = vAmbientColor + vDirectionalColor * directionalLightWeighting;
+			//gl_FragColor = vec4(vColor.rgb * lightWeighting, vColor.a);
+
+        }
+    }
+
+</script>
+
+<script id="shader-vs" type="x-shader/x-vertex">
+
+	attribute vec3 aVertexPosition;
+	attribute vec3 aVertexNormal;
+    attribute vec3 aVertexTangent;
+    attribute vec3 aVertexBiTangent;
+
+    attribute vec4 aVertexColor;
+    attribute vec2 aTextureCoord;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    uniform mat3 uNMatrix;
+    uniform mat4 uVMatrix;
+
+    uniform bool uUseLighting;
+    uniform vec3 uAmbientColor;
+    uniform vec3 uLightingDirection;
+    uniform vec3 uDirectionalColor;
+
+    varying vec4 vColor;
+    varying vec2 vTextureCoord;
+    varying vec3 vLightWeighting;
+    varying vec3 vLightingDirection;
+    varying mat3 vNMatrix;
+    varying vec3 vAmbientColor;
+    varying vec3 vDirectionalColor;
+    varying vec3 vTransformedNormal;
+    varying vec3 vLightVector;
+    varying mat3 vTbn;
+    varying vec4 vPosition;
+
+    highp mat4 transpose(in highp mat4 inMatrix) {
+		highp vec4 i0 = inMatrix[0];
+		highp vec4 i1 = inMatrix[1];
+		highp vec4 i2 = inMatrix[2];
+		highp vec4 i3 = inMatrix[3];
+
+		highp mat4 outMatrix = mat4(
+					 vec4(i0.x, i1.x, i2.x, i3.x),
+					 vec4(i0.y, i1.y, i2.y, i3.y),
+					 vec4(i0.z, i1.z, i2.z, i3.z),
+					 vec4(i0.w, i1.w, i2.w, i3.w)
+					 );
+
+		return outMatrix;
+	}
+
+	highp mat3 transpose(in highp mat3 inMatrix) {
+		highp vec3 i0 = inMatrix[0];
+		highp vec3 i1 = inMatrix[1];
+		highp vec3 i2 = inMatrix[2];
+
+		highp mat3 outMatrix = mat3(
+					 vec3(i0.x, i1.x, i2.x),
+					 vec3(i0.y, i1.y, i2.y),
+					 vec3(i0.z, i1.z, i2.z)
+					 );
+		return outMatrix;
+	}
+
+    void main(void) {
+    	vec4 vPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+        gl_Position = uPMatrix * vPosition;
+        vTextureCoord = aTextureCoord;
+        vTransformedNormal = uNMatrix * aVertexNormal;
+
+        vec3 normal_cameraSpace = normalize(mat3(uMVMatrix) * aVertexNormal);
+        vec3 tangent_cameraSpace = normalize(mat3(uMVMatrix) * aVertexTangent);
+        vec3 biTangent_cameraSpace = normalize(mat3(uMVMatrix) * aVertexBiTangent);
+
+        vec3 lightVector = mat3(uMVMatrix) * uLightingDirection; // uVMatrix *
+        vLightVector = normalize(lightVector.xyz - vPosition.xyz);
+
+		vTbn = mat3(tangent_cameraSpace, biTangent_cameraSpace, normal_cameraSpace);
+
+		vLightingDirection = mat3(uMVMatrix) * uLightingDirection;
+        vAmbientColor = uAmbientColor;
+        vDirectionalColor = uDirectionalColor;
+
+		vColor = aVertexColor;
+        if (!uUseLighting)
+        {
+        	vLightWeighting = vec3(1.0, 1.0, 1.0);
+        } else {
+
+
+			vec3 transformedNormal = uNMatrix * aVertexNormal;
+			float directionalLightWeighting = max(dot(transformedNormal, uLightingDirection), 0.0);
+			vLightWeighting = uAmbientColor + uDirectionalColor * directionalLightWeighting;
+			vNMatrix = uNMatrix;
+			//vec3 vTransformedNormal = transformedNormal;
+
+			vec3 vNormal = (normalize(uNMatrix * aVertexNormal));
+			vec3 vTangent = normalize(uNMatrix * aVertexTangent);
+			vec3 vBinormal = normalize(cross(vNormal, vTangent));
+			//vTbn = mat3(vTangent, vBinormal, vNormal);
+
+			//vLightVector = normalize(vLightingDirection, uMVMatrix.xyz);
+			//vLightVector = vLightingDirection;
+
+        }
+
+		vec3 test0 = aVertexNormal * aVertexPosition;
+		vec3 test1 = uAmbientColor;
+		vec3 test2 = uLightingDirection;
+		vec3 test3 = uDirectionalColor;
+		mat3 test4 = uNMatrix;
+
+    }
+
+</script>
+
+<script type="text/javascript">
+
+
+
+    var LayerSettings = {
+        FullName: "4D Visual Delivery",
+        StartDate: null,
+        EndDate: null,
+        CurrDate: null,
+        CurrGridBoxId: null,
+        CurrGridBoxLat: null,
+        CurrGridBoxLon: null,
+        Dataset_ID: null,
+        DatabaseStore: null,
+        OriginalLocation: null,
+        LevelName: null,
+        Level_ID: null,
+        TemperatureType: "C",
+        TemperatureSymbol: "\u2103",
+        DatabaseName: null,
+        originalMaxValue: null,
+        originalMinValue: null,
+        maxValue: null,
+        minValue: null,
+        animate: false
+    };
+
+    var displaySettings = {
+        currColormapName: "Color Brewer 2.0|Diverging|Zero Centered|11-class Spectral Inverse",
+        smoothGridBoxValues: true,
+        globeView: "ortho",
+        functionForColorMap: "customColorMapWithMidpoint",
+        CoastsType: "Coastlines/ne_110m_coastline.js",
+        LakesType: "CoastLines/ne_110m_lakes.js",
+        currRivers: "Coastlines/ne_110_rivers_lake_centerlines.js",
+        pacificCenter: false,
+        coasts: true,
+        minorIslands: false,
+        rivers: true,
+        lakes: true,
+        latLons: true,
+        geoLines: false,
+        timeZones: false,
+        lightingEnabled: true,
+        lightDirection: null,
+        lightDirectionColor: null,
+        lightAmbient: null
+    };
+
+    var RawData = {
+        GridBox_ID: [],
+        Lat: [],
+        Lon: [],
+        Value: []
+    };
+
+    var TimeSeries_date = [];
+    var TimeSeries_value = [];
+
+    var lightDirection = vec3.create();
+    var mvMatrix = mat4.create();
+    var vMatrix = mat4.create();
+    var lastPositionMatrix = mat4.create();
+    var mvMatrixStack = [];
+    var vMatrixStack = [];
+    var pMatrix = mat4.create();
+    var inMenu = false;
+    var timeSeriesAvailable = false;
+
+    var mvMatrixForVec = mat4.create();
+
+    var earthRotationMatrix = mat4.create();
+    mat4.identity(earthRotationMatrix);
+
+    var earthRotationMatrix_x = mat4.create();
+    mat4.identity(earthRotationMatrix_x);
+
+    var earthRotationMatrix_y = mat4.create();
+    mat4.identity(earthRotationMatrix_y);
+
+    var rGlobe = 0;
+
+    var lastTime = 0;
+
+
+</script>
+
+<body onload="webGLStart();">
+
+<!-- Accordion -->
+
+<div align="center">
+    <div id="canvas-align" style="display:block">
+        <canvas id="webgl-canvas" z-index=1></canvas>
+        <div id=hud">
+            <div id="divTitle"></div>
+            <div id="accordionSize" align="left"><!--onmouseover="inMenu = true;" onmouseout="inMenu = false;"-->
+                <div class="toggler">
+                    <button id="button" class="ui-state-default ui-corner-all">Menu</button>
+                    <div id="effect" class="ui-widget-content ui-corner-all" onmouseover="onMenu();" onmouseout="offMenu();">
+
+                        <h3 class="ui-widget-header ui-corner-all">SDSU 4D Data Visualization Options</h3>
+
+                        <h3>Dataset Selection</h3>
+
+                        <div id="dynamicMenu" onmouseover="inMenu = true;" onmouseout="inMenu = false;"
+                             align="left"></div>
+                        <br>
+
+                        <div id="accordion1" align="left">
+                            <h3>Layer Selection</h3>
+
+                            <div>
+                                <div id="Levels"></div>
+                                <!--input type="radio" name="layer" onchange="changeLayer(this.value)" value="g_webSfcMonMean_yearly">Yearly Average Temperature<br-->
+                                <!--input type="radio" name="layer" onchange="changeLayer(this.value)" value="p_getWebNoaaByDate">Noaa Global 5Deg Temp<br-->
+                                <!--input type="radio" name="layer" onchange="changeLayer(this.value)" value="g_webSfcMonMean_Anom_yearly">Yearly Average Temperature Anomaly<br>
+                                <input type="radio" name="layer" onchange="changeLayer(this.value)" value="g_webSfcMonMean_Anom_yearly_norm">Yearly Average Temperature Anomaly Normalized<br-->
+                            </div>
+                            <h3>Time Selection</h3>
+
+                            <div>
+                                Year: (min:
+                                <div id="divYearMin" style="display: inline"></div>
+                                , max:
+                                <div id="divYearMax" style="display: inline"></div>
+                                )
+                                <br><br>
+
+                                <div id="slider_year"></div>
+                                <br>
+                                <table>
+                                    <tr>
+                                        <td>Year:</td>
+                                        <td><input id="year" type="text" onchange="ChangeYear(this.value)"
+                                                   align="left"></td>
+                                        <td>Month:</td>
+                                        <td><select name="files" id="monthMenu" onmouseover="inMenu = true;"
+                                                    onmouseout="inMenu = false;">
+                                            <option value="01" selected="selected">January</option>
+                                            <option value="02">February</option>
+                                            <option value="03">March</option>
+                                            <option value="04">April</option>
+                                            <option value="05">May</option>
+                                            <option value="06">June</option>
+                                            <option value="07">July</option>
+                                            <option value="08">August</option>
+                                            <option value="09">September</option>
+                                            <option value="10">October</option>
+                                            <option value="11">November</option>
+                                            <option value="12">December</option>
+                                        </select></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Animate:</td>
+                                        <td>
+                                            <div id="animateRadio">
+                                                <input type="radio" id="animateRadio1" name="animateRadio"
+                                                       onchange="ChangeAnimate(this.value)" value=true><label
+                                                    for="animateRadio1">On</label>
+                                                <input type="radio" id="animateRadio2" name="animateRadio"
+                                                       onchange="ChangeAnimate(this.value)"
+                                                       value=false checked="checked"><label for="animateRadio2">Off</label>
+                                            </div>
+                                        </td>
+                                        <td>Months Jump:</td>
+                                        <td><input id="monthJump" value="1"></td>
+                                    </tr>
+
+                                </table>
+                            </div>
+                            <h3>Graphic Options</h3>
+
+                            <div>
+                                <h3 class="ui-widget-header ui-corner-all">Globe</h3>
+                                <br>
+                                <fieldset>
+                                    <legend>View Options</legend>
+                                    <table>
+                                        <tr>
+                                            <td>
+                                                <table>
+                                                    <tr>
+                                                        <td>Bump Mapping</td>
+                                                        <td>
+                                                            <div id="bumpMapGridRadio" align="left">
+                                                                <input type="radio" id="bumpMapGridRadio1"
+                                                                       onchange="changeBumpMapping(this.value)"
+                                                                       value="land"
+                                                                       name="bumpMapGridRadio" checked="checked"><label
+                                                                    for="bumpMapGridRadio1">Land</label>
+                                                                <input type="radio" id="bumpMapGridRadio2"
+                                                                       onchange="changeBumpMapping(this.value)"
+                                                                       value="landOcean"
+                                                                       name="bumpMapGridRadio"><label
+                                                                    for="bumpMapGridRadio2">Land & Bathymetry</label>
+                                                                <input type="radio" id="bumpMapGridRadio3"
+                                                                       onchange="changeBumpMapping(this.value)"
+                                                                       value=""
+                                                                       name="bumpMapGridRadio"><label
+                                                                    for="bumpMapGridRadio3">None</label>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Globe</td>
+                                                        <td>
+                                                            <div id="3dGlobeRadio">
+                                                                <input type="radio" id="3dGlobeRadio1"
+                                                                       onchange="changeGlobeView(this.value)" value="3d"
+                                                                       name="3dGlobeRadio"><label
+                                                                    for="3dGlobeRadio1">3D</label>
+                                                                <input type="radio" id="3dGlobeRadio2"
+                                                                       onchange="changeGlobeView(this.value)"
+                                                                       value="ortho" name="3dGlobeRadio" checked="checked"><label
+                                                                    for="3dGlobeRadio2">3D - Ortho</label>
+                                                                <input type="radio" id="3dGlobeRadio3"
+                                                                       onchange="changeGlobeView(this.value)" value="2d"
+                                                                       name="3dGlobeRadio"><label for="3dGlobeRadio3">2D
+                                                                - Mercator</label>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                            <td>
+                                                <table>
+                                                    <tr>
+                                                        <td>Smooth Grid</td>
+                                                        <td>
+                                                            <div id="smoothGridRadio" align="left">
+                                                                <input type="radio" id="smoothGridRadio1"
+                                                                       onchange="ChangeSmoothGridMenu(this.value)"
+                                                                       value=true name="smoothGridRadio"
+                                                                       checked="checked">
+                                                                <label for="smoothGridRadio1">On</label>
+                                                                <input type="radio" id="smoothGridRadio2"
+                                                                       onchange="ChangeSmoothGridMenu(this.value)"
+                                                                       value=false name="smoothGridRadio">
+                                                                <label for="smoothGridRadio2">Off</label>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Pacific Centered</td>
+                                                        <td>
+                                                            <div id="pacificRadio">
+                                                                <input type="radio" id="pacificRadio1"
+                                                                       onchange="ChangeCenterMenu(this.value)" value=true
+                                                                       name="pacificRadio"><label
+                                                                    for="pacificRadio1">On</label>
+                                                                <input type="radio" id="pacificRadio2"
+                                                                       onchange="ChangeCenterMenu(this.value)" value=false
+                                                                       name="pacificRadio" checked="checked"><label
+                                                                    for="pacificRadio2">Off</label>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                </fieldset>
+                                <fieldset>
+                                    <legend>Additional Lines</legend>
+                                    <table>
+                                        <tr>
+                                            <td>
+                                                <table>
+                                                    <tr>
+                                                        <td>Lakes</td>
+                                                        <td>
+                                                            <div id="lakesRadio">
+                                                                <input type="radio" id="lakesRadio1"
+                                                                       onchange="ChangeLakesMenu(this.value)" value="110m"
+                                                                       name="lakesRadio" checked="checked"><label
+                                                                    for="lakesRadio1">Low</label>
+                                                                <input type="radio" id="lakesRadio2"
+                                                                       onchange="ChangeLakesMenu(this.value)" value="50m"
+                                                                       name="lakesRadio"><label
+                                                                    for="lakesRadio2">Medium</label>
+                                                                <input type="radio" id="lakesRadio3"
+                                                                       onchange="ChangeLakesMenu(this.value)" value="10m"
+                                                                       name="lakesRadio"><label
+                                                                    for="lakesRadio3">High</label>
+                                                                <input type="radio" id="lakesRadio4"
+                                                                       onchange="ChangeLakesMenu(this.value)" value=""
+                                                                       name="lakesRadio"><label
+                                                                    for="lakesRadio4">None</label>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Rivers</td>
+                                                        <td>
+                                                            <div id="riversRadio">
+                                                                <input type="radio" id="riversRadio1"
+                                                                       onchange="ChangeRiversMenu(this.value)" value="110m"
+                                                                       name="riversRadio" checked="checked"><label
+                                                                    for="riversRadio1">Low</label>
+                                                                <input type="radio" id="riversRadio2"
+                                                                       onchange="ChangeRiversMenu(this.value)" value="50m"
+                                                                       name="riversRadio"><label for="riversRadio2">Medium</label>
+                                                                <input type="radio" id="riversRadio3"
+                                                                       onchange="ChangeRiversMenu(this.value)" value="10m"
+                                                                       name="riversRadio"><label
+                                                                    for="riversRadio3">High</label>
+                                                                <input type="radio" id="riversRadio4"
+                                                                       onchange="ChangeRiversMenu(this.value)" value=""
+                                                                       name="riversRadio"><label
+                                                                    for="riversRadio4">None</label>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Coasts</td>
+                                                        <td>
+                                                            <div id="coastsRadio">
+                                                                <input type="radio" id="coastsRadio1" name="coastsRadio"
+                                                                       onchange="ChangeCoastsMenu(this.value)" value="110m"
+                                                                       checked="checked"><label
+                                                                    for="coastsRadio1">Low</label>
+                                                                <input type="radio" id="coastsRadio2" name="coastsRadio"
+                                                                       onchange="ChangeCoastsMenu(this.value)"
+                                                                       value="50m"><label
+                                                                    for="coastsRadio2">Medium</label>
+                                                                <input type="radio" id="coastsRadio3" name="coastsRadio"
+                                                                       onchange="ChangeCoastsMenu(this.value)"
+                                                                       value="10m"><label
+                                                                    for="coastsRadio3">High</label>
+                                                                <input type="radio" id="coastsRadio4" name="coastsRadio"
+                                                                       onchange="ChangeCoastsMenu(this.value)"
+                                                                       value=""><label for="coastsRadio4">None</label>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                            <td>
+                                                <table>
+                                                    <tr>
+                                                        <td>Minor Islands</td>
+                                                        <td>
+                                                            <div id="minorIslandsRadio">
+                                                                <input type="radio" id="minorIslandsRadio1"
+                                                                       name="minorIslandsRadio"
+                                                                       onchange="ChangeMinorIslandsMenu(this.value)"
+                                                                       value=true><label
+                                                                    for="minorIslandsRadio1">On</label>
+                                                                <input type="radio" id="minorIslandsRadio2"
+                                                                       name="minorIslandsRadio"
+                                                                       onchange="ChangeMinorIslandsMenu(this.value)"
+                                                                       value=false checked="checked"><label
+                                                                    for="minorIslandsRadio2">Off</label>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Lat / Lon</td>
+                                                        <td>
+                                                            <div id="latLonRadio">
+                                                                <input type="radio" id="latLonRadio1" name="latLonRadio"
+                                                                       onchange="ChangeLatLonMenu(this.value)" value=true
+                                                                       checked="checked"><label
+                                                                    for="latLonRadio1">On</label>
+                                                                <input type="radio" id="latLonRadio2" name="latLonRadio"
+                                                                       onchange="ChangeLatLonMenu(this.value)"
+                                                                       value=false><label for="latLonRadio2">Off</label>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Geographic Lines</td>
+                                                        <td>
+                                                            <div id="geoLinesRadio">
+                                                                <input type="radio" id="geoLinesRadio1"
+                                                                       name="geoLinesRadio"
+                                                                       onchange="ChangeGeoLinesMenu(this.value)"
+                                                                       value=true><label for="geoLinesRadio1">On</label>
+                                                                <input type="radio" id="geoLinesRadio2"
+                                                                       name="geoLinesRadio"
+                                                                       onchange="ChangeGeoLinesMenu(this.value)" value=false
+                                                                       checked="checked"><label
+                                                                    for="geoLinesRadio2">Off</label>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+
+                                                    <tr>
+                                                        <td>Timezones</td>
+                                                        <td>
+                                                            <div id="TimezonesRadio">
+                                                                <input type="radio" id="Timezones1" name="Timezones"
+                                                                       onchange="ChangeTimeZonesMenu(this.value)" value=true><label
+                                                                    for="Timezones1">On</label>
+                                                                <input type="radio" id="Timezones2" name="Timezones"
+                                                                       onchange="ChangeTimeZonesMenu(this.value)" value=false
+                                                                       checked="checked"><label
+                                                                    for="Timezones2">Off</label>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+
+
+                                </fieldset>
+                                <br>
+
+                                <h3 class="ui-widget-header ui-corner-all">Color Map</h3>
+                                <br>
+                                <table>
+                                    <tr>
+                                        <td>
+                                            <div id="colormapDynamicMenu" onmouseover="inMenu = true;" onmouseout="inMenu = false;"
+                                                 align="topleft"></div>
+                                            <br><br><br><br><br>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>UpperBoundLimit:</td>
+                                        <td><input id="upperBoundLimit" value="1" onchange="ChangeUpperBoundMenu(this.value)"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>LowerBoundLimit:</td>
+                                        <td><input id="lowerBoundLimit" value="1" onchange="ChangeLowerBoundMenu(this.value)"></td>
+                                    </tr>
+                                </table>
+
+
+                            </div>
+                            <h3>Download Options</h3>
+
+                            <div>
+                                <button onclick="createCsvFromGriddedData()">Download Gridded Data</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="legend"></div>
+            <!--div id="timeSeriesButton1" style="display:none" onmouseover="inMenu = true;" onmouseout="inMenu = false;">
+                <a href="javascript:SwapDivsWithClick('canvas-align','timeSeriesBox')">
+                    <img src="timeSeriesIcon.png" alt="View Timeseries" style="width:100px;height:80px;">
+                </a>
+            </div-->
+            <div id="divDate"></div>
+            <div id="gridBoxSize" style="display:none" onmouseover="inMenu = true;" onmouseout="inMenu = false;"
+                 align="left">
+                <div id="gridBox" class="ui-widget-content ui-corner-all">
+                    <h3 class="ui-widget-header ui-corner-all">Grid Box Info</h3>
+                    <table>
+                        <tr>
+                            <td>Latitude</td>
+                            <td>
+                                <div id="divGridLat" align="left"></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Longitude</td>
+                            <td>
+                                <div id="divGridLon" align="left"></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Value</td>
+                            <td>
+                                <div id="divGridValue" align="left"></div>
+                            </td>
+                        </tr>
+                    </table>
+                    <button onclick="LoadTimeseriesData(LayerSettings);">View Timeseries</button>
+                </div>
+            </div>
+            <div id="timeSeries" style="display:none" align="center" onmouseover="inMenu = true;"
+                 onmouseout="inMenu = false;">
+                <div id="timeSeriesBox" class="ui-widget-content ui-corner-all">
+                    <h3 class="ui-widget-header ui-corner-all" align="center">Timeseries</h3>
+
+                    <div id="TimeSeriesChart" align="center"></div>
+                    <fieldset>
+                        <legend>Layers:</legend>
+                        <div id="TimeSeriesLevels"></div>
+
+                    </fieldset>
+                    <table>
+                        <tr>
+                            <td>Latitude</td>
+                            <td>
+                                <div id="divGridLat2" align="left"></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Longitude</td>
+                            <td>
+                                <div id="divGridLon2" align="left"></div>
+                            </td>
+                        </tr>
+                    </table>
+                    <button onclick="createCsvFromTimeseriesData()">Download Timeseries Data</button>
+                    <button onclick="document.getElementById('timeSeries').style.display = 'none';">Close Timeseries
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="dialogNoData" title="No data selected" style="display:none">
+    <p>No data was selected. Nothing to download </p>
+</div>
+</body>
+</html>
