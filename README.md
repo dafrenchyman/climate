@@ -8,9 +8,10 @@ The database component is not included as part of this (and will be put in it's 
 
 # Legal Information & Credits
 
-Copyright (c) 2017 Julien Pierret
+Copyright (C) 2013-2018, San Diego State University Research Foundation.
+Created by Julien Pierret and Dr. Samuel Shen, San Diego State University.
 
-This software was written by Julien Pierret. It is being developed as part of my PhD dissertation work. It uses a lot of other open source libraries and files:
+This software is being developed as part of my PhD dissertation work. It uses a lot of other open source libraries and files:
 - http://c3js.org/: Timeseries charts
 - https://d3js.org/: For the colorbar legend
 - http://glmatrix.net/: For help with all the WebGL stuff
